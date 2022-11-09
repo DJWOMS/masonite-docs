@@ -39,3 +39,4 @@ nav:
     - Response: basics/response.md
     - Статические файлы: basics/static_files.md
     - Представления (View): basics/view.md
+    - Environments: basics/environments.md
