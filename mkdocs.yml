@@ -5,6 +5,7 @@ theme:
     - navigation.instant
   logo: assets/masonite.png
   language: ru
+  repo_url: https://github.com/MasoniteFramework/masonite
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -30,6 +31,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/squidfunk
 nav:
   - Введение и установка: index.md
   - Основное:
@@ -41,3 +46,4 @@ nav:
     - Представления (View): basics/view.md
     - Environments: basics/environments.md
     - Конфигурация: basics/configuration.md
+    - Обработка ошибок: basics/error_handling.md
