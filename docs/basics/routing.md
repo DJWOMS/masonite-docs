@@ -192,8 +192,9 @@ ROUTES = [
     ],
     prefix="/dashboard",
     middleware=['web', 'cors'],
-    name="dashboard."),
+    name="dashboard.",
     domain="docs"
+    )
 ]
 ``` 
  

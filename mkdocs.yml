@@ -30,6 +30,12 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+
 extra:
   social:
     - icon: fontawesome/brands/github
@@ -38,6 +44,8 @@ extra:
       link: https://t.me/masonite_channel
 nav:
   - Введение и установка: index.md
+  - Примеры:
+      - ToDo: examples/masonite-todo.md
   - Основное:
     - Маршрутизация (Route): basics/routing.md
     - Контроллеры (Controllers): basics/controllers.md
@@ -49,3 +57,5 @@ nav:
     - Environments: basics/environments.md
     - Конфигурация: basics/configuration.md
     - Обработка ошибок: basics/error_handling.md
+  - Архитектура:
+    - Service Container: architecture/service-container.md
