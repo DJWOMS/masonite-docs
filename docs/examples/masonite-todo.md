@@ -291,7 +291,7 @@ class CreateTasksTable(Migration):
         with self.schema.create("tasks") as table:
             table.increments("id")
             table.char("text")
-            table.boolean("done")
+            table.boolean("done").default(False)
             table.datetime("end_date")
             table.integer("category_id").unsigned()
             table.foreign("category_id").references("id").on("categories").on_delete("cascade")
@@ -304,8 +304,8 @@ class CreateTasksTable(Migration):
         self.schema.drop("tasks")
 ```
 
-Поясню строки 16 и 17:
-
+Поясню строки 14, 16 и 17:
+- **.default(False)** - значение по умолчанию.
 - **.unsigned()** - задает столбцу целочисленное представление, без знака.
 - **.foreign("category_id")** - внешний ключ, название столбца во нашей таблице.
 - **.references("id")** - столбец во внешней таблице, на который будет ссылаться локальный столбец.
@@ -1228,12 +1228,13 @@ class TaskController(Controller):
 #### Импорт
 
 Сразу добавим нужные нам импорты. Импортируем классы `Request`, `Response` и модель `Task`.
-```py linenums="1" hl_lines="2 3 6"  title="app/controllers/TaskController.py"
+```py linenums="1" hl_lines="2 3 6 7"  title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
 from masonite.response import Response
 from masonite.views import View
 
+from app.models.Category import Category
 from app.models.Task import Task
 
 
@@ -1287,3 +1288,159 @@ URL-адрес будет виде `/task`, `/task/create `и т.д. За это
     Обратите внимание, если вы указали параметр `name`, то вам обязательно нужно для каждого маршрута
     в группе указать имя в методе `name()`.
     **Иначе вы получите ошибку.**
+
+### Создание и вывод списка задач
+Вернемся в файл `app/controllers/TaskController.py` и доработаем три метода, `index()`, `create()`, 
+`store()`.
+```py linenums="1" hl_lines="11-13 15-17 19-31"  title="app/controllers/TaskController.py"
+from masonite.controllers import Controller
+from masonite.request import Request
+from masonite.response import Response
+from masonite.views import View
+
+from app.models.Category import Category
+from app.models.Task import Task
+
+
+class TaskController(Controller):
+    def index(self, view: View):
+        tasks = Task.all()
+        return view.render("task.list", {"tasks": tasks})
+
+    def create(self, view: View):
+        categories = Category.all()
+        return view.render("task.create", {"categories": categories})
+
+    def store(self, request: Request, response: Response):
+        error = request.validate(
+            {
+                "text": "required",
+                "end_date": "required",
+                "category_id": "required"
+            }
+        )
+        if error:
+            return response.redirect(name="task.create")
+
+        Task.create(**request.only("text", "end_date", "category_id"))
+        return response.redirect(name="task.list")
+
+    def show(self, view: View):
+        return view.render("")
+
+    def edit(self, view: View):
+        return view.render("")
+
+    def update(self, view: View):
+        return view.render("")
+
+    def destroy(self, view: View):
+        return view.render("")
+```
+
+Метод `index()` похож на метод который мы писали для категорий. Здесь мы получаем список задач.
+
+В методе `create()` мы не просто рендерим страницу, но и передаем список всех категорий, чтобы можно
+было выбрать к какой категории привязать задачу.
+
+Наш метод `store()` также похож на тот который мы уже писали, но есть отличия. Указано 
+несколько обязательных данных, такие как, `text`, `end_date`, `category_id`.
+
+Также обратите внимание на 30-ю строку. Здесь для получения данных мы используем метод `only()`.
+Он вернет только те данные которые мы указали.
+
+### Шаблон списка задач
+В директории `templates` создайте директорию `task`. 
+
+Создайте файл `templates/task/list.html`.
+```html linenums="1" hl_lines="12 17" title="templates/task/list.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="/static/style.css" rel="stylesheet">
+  <title>Категории</title>
+</head>
+<body>
+
+<section>
+  <h2>Список всех задач</h2>
+  <a href="{{ route('task.create') }}">Создать задачу</a>
+
+  <ul class="list">
+    @for task in tasks
+    <li class="list-item">
+      <a href="{{ route('task.single', {'id': task.id}) }}">{{task.text}}</a>
+    </li>
+    @endfor
+  </ul>
+</section>
+
+</body>
+</html>
+```
+Данный шаблон похож на тот, который ми писали для списка категорий, но есть пару отличий.
+
+Обратите внимание на выделенные строки. На 12-й строке для формирования url используется метод `route()`.
+
+На 17-й строке также используем `route()`, но так как, нам нужно передать `id` задачи, после имени
+маршрута указываем словарь для нашего параметра `id`. Обратите внимание, что `task.id` не взять в двойные
+фигурные скобки.
+
+### Шаблон создания задачи
+Создайте файл `templates/task/create.html` и добавьте в него код ниже.
+```html linenums="1" title="templates/task/create.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="/static/style.css" rel="stylesheet">
+  <title>Title</title>
+</head>
+<body>
+<section>
+
+  <h2>Создать задачу</h2>
+
+  <form action="{{ route('task.store') }}" method="POST">
+    {{ csrf_field }}
+    <input type="text" name="text">
+    <input type="datetime-local" name="end_date">
+    <select name="category_id">
+      <option disabled>Выберите категорию</option>
+      @for category in categories
+        <option value="{{category.id}}">{{category.name}}</option>
+      @endfor
+    </select>
+    <button type="submit">Создать</button>
+  </form>
+
+</section>
+</body>
+</html>
+```
+
+Рассмотрим фрагмент кода с выбором категории.
+```html linenums="1" hl_lines="11-13" title="templates/task/create.html"
+...
+
+  <h2>Создать задачу</h2>
+
+  <form action="{{ route('task.store') }}" method="POST">
+    {{ csrf_field }}
+    <input type="text" name="text">
+    <input type="datetime-local" name="end_date">
+    <select name="category_id">
+      <option disabled>Выберите категорию</option>
+      @for category in categories
+        <option value="{{category.id}}">{{category.name}}</option>
+      @endfor
+    </select>
+    <button type="submit">Создать</button>
+  </form>
+
+...
+```
+
+Здесь мы перебираем список категорий и формируем `select`. Значение `option` - `id` категории, 
+а пользователю покажем имя категории.
