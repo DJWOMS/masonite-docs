@@ -45,7 +45,12 @@ extra:
 nav:
   - Введение и установка: index.md
   - Примеры:
-      - ToDo: examples/masonite-todo.md
+      - ToDo:
+        - Установка: examples/todo/installation.md
+        - Структура проекта: examples/todo/structure_masonite.md
+        - Работа с базой данных: examples/todo/database_architecture.md
+        - Категории: examples/todo/category.md
+        - Задачи: examples/todo/task.md
   - Основное:
     - Маршрутизация (Route): basics/routing.md
     - Контроллеры (Controllers): basics/controllers.md
