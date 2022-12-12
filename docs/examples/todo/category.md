@@ -9,6 +9,8 @@
 отдельные файлы.
 
 В большинстве случаев, вы можете создать контроллер с помощью команды `craft`:
+
+Выполним команду для создания контроллера категорий.
 ```
 python craft controller Category
 ```
@@ -215,8 +217,8 @@ ROUTES = [
 Здесь указываем ссылку на файл стилей, ниже мы его создадим.
 
 ### Статические файлы
-
-Создадим файл `style.css` в директории `storage/static/` и добавим в него следующий код.
+В директории `storage` создайте папку `static`.
+Создайте файл `style.css` в директории `storage/static/` и добавим в него следующий код.
 ```css linenums="1" title="storage/static/style.css"
 section {
     width: 700px;
@@ -265,23 +267,19 @@ a {
 .btn-del:hover {
     background-color: #c91f1f;
 }
+
+.done::after {
+    content: '\2713';
+    color: #199319;
+}
+
+.work::after {
+    content: '\25CF';
+    color: #c91f1f;
+}
 ```
-
-## Запуск сервера разработки
-Выполним команду для запуска сервера разработки:
-```
-python craft serve
-```
-И перейдите по адресу `http://localhost:8000/create`
-
-Вы увидите форму, после отправки которой вас перенаправит на `http://localhost:8000/`
-
-## Чтение, редактирование и удаление категорий
-Теперь выведем список категорий которые мы создаем. Также сделаю, чтобы можно было 
-редактировать и удалять категорию.
-
 ### Список категорий
-
+Теперь выведем список категорий которые мы создаем. 
 #### Контроллер
 В файле `app/controllers/CategoryController.py` добавим следующий код:
 ```py linenums="1" hl_lines="10-12" title="app/controllers/CategoryController.py"
@@ -312,11 +310,14 @@ class CategoryController(Controller):
         Category.create(name=request.input("name"))
         return response.redirect('/')
 ```
-Здесь мы получаем все категории из БД. Затем указываем какой шаблон рендерить и передаем контекст в 
-виде словаря. По ключу словаря будем обращаться к данным в самом шаблоне.
+Здесь мы получаем все категории из БД. Вызвав метод `all()` модели, мы получим все записи из БД.
+Затем указываем какой шаблон рендерить и передаем контекст в виде словаря. Таким образом передаем
+данные в шаблон.
+По ключу словаря будем обращаться к данным в самом шаблоне.
 
 #### Routes
-В файле `routes/web.py` добавим url для вывода списка категорий.
+В файле `routes/web.py` добавим маршрут для вывода списка категорий. Перейдя на главную страницу сайта
+будем получать все категории.
 ```py linenums="1" hl_lines="5" title="routes/web.py"
 from masonite.routes import Route
 
@@ -329,7 +330,7 @@ ROUTES = [
 ```
 
 #### Шаблон html
-В директории `templates/category` создадим файл `list.html`.
+В директории `templates/category` создадим файл `list.html` и добавим следующий код.
 
 ```html linenums="1" title="templates/category/list.html"
 <!DOCTYPE html>
@@ -344,13 +345,11 @@ ROUTES = [
 
   <div class="center">
     <h2>Список категорий</h2>
-
-    <a class="btn" href="{{ route('category_create') }}">Создать категорию</a>
   </div>
 
   @for category in categories
   <div class="list-item">
-    <a href="/task">{{category.name}}</a>
+    <a href="/task/{{category.id}}">{{category.name}}</a>
     <a class="edit" href="/single/{{category.id}}">Редактировать</a>
   </div>
   @endfor
@@ -361,15 +360,15 @@ ROUTES = [
 ```
 
 !!! note success ""
-    Masonite использует шаблоны `Jinja2`, поэтому, если вы не понимаете этот шаблон, обязательно 
+    Masonite использует шаблонизатор `Jinja2`, поэтому, если вы не понимаете этот шаблон, обязательно 
     ознакомьтесь с [документацией](https://jinja.palletsprojects.com/en/3.0.x/).
 
 !!! note "Наследование шаблонов"
-    Jinja2 поддерживает расширение (наследование) шаблонов. Так в Masonite предустановлен базовый шаблон,
-    `templates/base.html`.
+    Jinja2 поддерживает расширение (наследование) шаблонов, чтобы избежать повторения кода.
+    В Masonite уже предустановлен базовый шаблон, `templates/base.html`.
     В данном руководстве мы не будем использовать наследование шаблонов, для упрощения задачи.
 
-```html linenums="1" hl_lines="14 16 18" title="templates/category/list.html"
+```html linenums="1" hl_lines="15 18" title="templates/category/list.html"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -382,13 +381,11 @@ ROUTES = [
 
   <div class="center">
     <h2>Список категорий</h2>
-
-    <a class="btn" href="{{ route('category_create') }}">Создать категорию</a>
   </div>
 
   @for category in categories
   <div class="list-item">
-    <a href="/task">{{category.name}}</a>
+    <a href="/task/{{category.id}}">{{category.name}}</a>
     <a class="edit" href="/single/{{category.id}}">Редактировать</a>
   </div>
   @endfor
@@ -402,16 +399,29 @@ ROUTES = [
 В фигурных скобках указываем объект категории и через точку обращаемся к атрибуту (столбцу таблицы) 
 `name` и `id`.
 
-На строке ТУТ НОМЕР указываем ссылку на список задач, в данный момент у нас еще нет такого url, 
-реализуем позже.
+На строке 17 указываем ссылку на список задач конкретной категории, передаем `id` категории.
+В данный момент у нас еще нет логики обработки этого url, реализуем позже.
 
-На -й строке формируем ссылку на странице редактирования. Ниже реализуем данный функционал.
+На 18-й строке формируем ссылку на странице редактирования. Ниже реализуем данный функционал.
 
-### Одна категория, редактирование и удаление
-Теперь реализуем возможность просматривать одну категорию, чтобы иметь возможность 
+## Запуск сервера разработки
+Выполним команду для запуска сервера разработки:
+```
+python craft serve
+```
+И перейдите по адресу [http://127.0.0.1:8000/create](http://127.0.0.1:8000/create)
+
+Вы увидите форму, после отправки которой вас перенаправит на `http://127.0.0.1:8000/`
+
+## Чтение, редактирование и удаление категорий
+Также сделаем, чтобы можно было редактировать и удалять категорию.
+
+### Вывод одной категории
+Реализуем возможность просматривать одну категорию, чтобы иметь возможность 
 редактировать её и удалять.
 
 #### Контроллер одной категории
+Доработаем метод `show()` контроллера `CategoryController`.
 ```py linenums="1" hl_lines="14-16" title="app/controllers/CategoryController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
@@ -442,7 +452,9 @@ class CategoryController(Controller):
         return response.redirect('/')
 ```
 
-В метод `show()` добавил получение request. 
+В метод `show()` добавил получение `request`. Чтобы получить параметр из маршрута. Для этого 
+используем метод `param()` с указанием имени параметра.
+
 Затем ищем категорию по `id`, который будет передаваться в url, например, `/single/2`. Здесь `2` и 
 есть наш `id`. Если такая категория не будет найдена, мы увидим ошибку 404. Если вы не хотите получать
 эту ошибку, можете вызвать метод `find()` у модели.
@@ -491,19 +503,19 @@ ROUTES = [
     </p>
   </form>
 
-  <a class="btn-del" href="/delete/{{category.id}}">Удалить</a>
-
 </section>
 </body>
 </html>
 ```
 
-В `action` указал url по которому будет идти отправка формы, контролер и маршрут напишем позже.
+В форме используя атрибут`action` указываем url по которому будет идти отправка формы, 
+контролер и маршрут напишем позже.
 
 В `value` тега `input` передаю значение имени категории. Таким образом форма будет заполнена.
 
 ### Контроллер обновления категории
-```py linenums="1" hl_lines="34" title="app/controllers/CategoryController.py"
+Добавим метод `update()` в наш контроллер. Он будет отвечать за обновление категории.
+```py linenums="1" hl_lines="29-38" title="app/controllers/CategoryController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
 from masonite.response import Response
@@ -543,39 +555,18 @@ class CategoryController(Controller):
         category.save()
         return response.redirect('/')
 ```
-
+На 32-й строке указываем, что `name` обязателен.
 Если `name` будет отсутствовать, то пользователь будет перенаправлен на ту же страницу.
+
 Я здесь не использую `back()`, для того чтобы показать как работать с `redirect()`.
-Указываем имя маршрута и в параметрах виде словаря передаем `id` категории.
 
-```py linenums="1" hl_lines="30 36 37" title="app/controllers/CategoryController.py"
-from masonite.controllers import Controller
-from masonite.request import Request
-from masonite.response import Response
-from masonite.views import View
+В метод `redirect()` передаем имя маршрута и в параметрах виде словаря передаем `id` категории.
+Таким образом будет построен нужный нам url, на страницу редактирования категории.
 
-from app.models.Category import Category
-
-
+```py linenums="1" hl_lines="6 12 13" title="app/controllers/CategoryController.py"
+...
 class CategoryController(Controller):
-    def index(self, view: View):
-        categories = Category.all()
-        return view.render('category.list', {'categories': categories})
-
-    def show(self, view: View, request: Request):
-        category = Category.find_or_fail(request.param("id"))
-        return view.render('category.single', {'category': category})
-
-    def create(self, view: View):
-        return view.render("category.create")
-
-    def store(self, request: Request, response: Response):
-        errors = request.validate({"name": "required"})
-        if errors:
-            return response.back()
-            
-        Category.create(name=request.input("name"))
-        return response.redirect('/')
+    ...
         
     def update(self, request: Request, response: Response):
         category = Category.find_or_fail(request.param("id"))
@@ -589,7 +580,7 @@ class CategoryController(Controller):
         return response.redirect('/')
 ```
 После получения объекта категории, атрибуту `name` присваиваем полученное значение от 
-пользователя и сохраняем.
+пользователя и сохраняем значение в БД.
 
 #### Route обновления категории
 ```py linenums="1" hl_lines="9" title="routes/web.py"
@@ -612,42 +603,18 @@ ROUTES = [
 ```
 python craft serve
 ```
-Если вы уже создавали категорию, то перейдите по ссылке `http://localhost:8000/single/1`.
+Перейдите по адресу [http://localhost:8000](http://localhost:8000). Если вы уже создавали категорию,
+то кликнув по ссылке **_Редактировать_** вас перенаправит на страницу редактирования категории.
+
+Или перейдите по ссылке
+[http://localhost:8000/single/1](http://localhost:8000/single/1)
+
 У вас должна отобразиться форма с уже заполненными данными. 
 
 Если из поля ввода удалить текст и сохранить, вас должно перенаправить на эту же страницу. 
 
 Вы можете ввести валидные данные и нажать сохранить, категория измениться и вы будете перенаправлены 
 на главную страницу.
-
-#### Ссылка на редактирование
-Доработаем шаблон списка категорий и укажем ссылку на страницу редактирования.
-
-```html linenums="1" hl_lines="16" title="templates/category/list.html"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <link href="/static/style.css" rel="stylesheet">
-  <title>Категории</title>
-</head>
-<body>
-
-<section>
-  <h2>Список категорий</h2>
-
-  <ul class="list">
-    @for category in categories
-    <li class="list-item">
-      <a href="/single/{{category.id}}">{{category.name}}</a>
-    </li>
-    @endfor
-  </ul>
-</section>
-
-</body>
-</html>
-```
 
 ### Удаление категории
 Настало время реализовать удаление категории.
@@ -715,13 +682,13 @@ ROUTES = [
     Route.get("/delete/@id", "CategoryController@destroy"),
 ]
 ```
-Добавляю еще один url для удаления категории. Также будем передавать `id` той категории которую хотим
-удалить. Для удаления будем использовать http метод `get`.
+Добавляю еще один маршрут для удаления категории. Также будем передавать `id` той категории которую
+хотим удалить. Для удаления будем использовать http метод `get`.
 
 #### Шаблон удаления категории
 В шаблоне `templates/category/single.html` добавим ссылку на удаление.
 
-```html linenums="1" hl_lines="21" title="templates/category/single.html"
+```html linenums="1" hl_lines="18" title="templates/category/single.html"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -738,24 +705,26 @@ ROUTES = [
     {{ csrf_field }}
     <input type="text" name="name" value="{{category.name}}">
     <p>
-      <button type="submit">Сохранить</button>
+      <button class="btn" type="submit">Сохранить</button>
+      <a class="btn-del" href="/delete/{{category.id}}">Удалить</a>
     </p>
   </form>
-  
-  <a href="/delete/{{category.id}}">Удалить</a>
 
 </section>
 </body>
 </html>
 ```
-Просто добавляем ссылку на url удаления категории и подставляем id категории.
+Просто добавляем ссылку на удаления категории и подставляем `id` категории. 
 
 После нажатия по ссылке, категория должна удалиться и вы будете перенаправлены на главную страницу.
 
-#### Ссылка на создание категории
-Доработаем шаблон списка категорий `templates/category/single.html` и добавим ссылку на страницу создания категории.
+Запустите сервер разработки, перейдите на страницу редактирования категории и попробуйте удалить 
+категорию.
 
-```html linenums="1" hl_lines="13" title="templates/category/list.html"
+### Ссылка на создание категории
+Доработаем шаблон списка категорий `templates/category/list.html` и добавим ссылку на страницу создания категории.
+
+```html linenums="1" hl_lines="14" title="templates/category/list.html"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -764,21 +733,22 @@ ROUTES = [
   <title>Категории</title>
 </head>
 <body>
-
 <section>
-  <h2>Список категорий</h2>
-  
-  <a href="{{ route('category_create') }}">Создать категорию</a>
 
-  <ul class="list">
-    @for category in categories
-    <li class="list-item">
-      <a href="/single/{{category.id}}">{{category.name}}</a>
-    </li>
-    @endfor
-  </ul>
+  <div class="center">
+    <h2>Список категорий</h2>
+    
+    <a class="btn" href="{{ route('category_create') }}">Создать категорию</a>
+  </div>
+
+  @for category in categories
+  <div class="list-item">
+    <a href="/task/{{category.id}}">{{category.name}}</a>
+    <a class="edit" href="/single/{{category.id}}">Редактировать</a>
+  </div>
+  @endfor
+
 </section>
-
 </body>
 </html>
 ```

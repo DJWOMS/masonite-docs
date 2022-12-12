@@ -10,6 +10,7 @@ python craft controller Task -r
 ### Контроллер задач
 Откройте файл `app/controllers/TaskController.py`.
 
+Все нужные нам методы уже присутствуют, это великолепно.
 ```py linenums="1" title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.views import View
@@ -39,7 +40,7 @@ class TaskController(Controller):
 ```
 #### Импорт
 
-Сразу добавим нужные нам импорты. Импортируем классы `Request`, `Response` и модель `Task`.
+Сразу добавим нужные нам импорты. Импортируем классы `Request`, `Response` и модели `Category`, `Task`.
 ```py linenums="1" hl_lines="2 3 6 7"  title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
@@ -59,7 +60,9 @@ class TaskController(Controller):
 ### Маршруты для задач
 Группы маршрутов — отличный способ сгруппировать вместе несколько маршрутов с одинаковыми параметрами, 
 такими как префикс или с одним и тем же middleware. 
-```py linenums="1" hl_lines="11-23" title="routes/web.py"
+
+В файл `routes/web.py` добавим следующий код:
+```py linenums="1" hl_lines="11-22" title="routes/web.py"
 from masonite.routes import Route
 
 ROUTES = [
@@ -72,20 +75,20 @@ ROUTES = [
 
     Route.group(
         [
-            Route.get("/", "TaskController@index").name("list"),
             Route.get("/create", "TaskController@create").name("create"),
             Route.post("/create", "TaskController@store").name("store"),
             Route.get("/single/@id", "TaskController@show").name("single"),
             Route.post("/update/@id", "TaskController@update").name("update"),
             Route.get("/delete/@id", "TaskController@destroy").name("delete"),
-            Route.post("/edit/@id", "TaskController@edit").name("done"),
+            Route.get("/@category_id", "TaskController@index").name("list"),
         ],
         prefix="/task",
         name="task."
     )
 ]
 ```
-Для этого мы используем метод `group()`, который принимает список маршрутов и параметры.
+Для объединения маршрутов в группу мы используем метод `group()`, который принимает список маршрутов 
+и параметры.
 
 В приведенном выше коде, имена маршрутов будут `task.list`, `task.create` и т.д. За это отвечает параметр
 `name`.
@@ -104,7 +107,7 @@ URL-адрес будет виде `/task`, `/task/create `и т.д. За это
 ### Создание и вывод списка задач
 Вернемся в файл `app/controllers/TaskController.py` и доработаем три метода, `index()`, `create()`, 
 `store()`.
-```py linenums="1" hl_lines="11-13 15-17 19-31"  title="app/controllers/TaskController.py"
+```py linenums="1" hl_lines="11-13 15-17 19-33"  title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
 from masonite.response import Response
@@ -115,8 +118,8 @@ from app.models.Task import Task
 
 
 class TaskController(Controller):
-    def index(self, view: View):
-        tasks = Task.all()
+    def index(self, view: View, request: Request):
+        tasks = Task.where("category_id", request.param("category_id")).get()
         return view.render("task.list", {"tasks": tasks})
 
     def create(self, view: View):
@@ -135,7 +138,9 @@ class TaskController(Controller):
             return response.redirect(name="task.create")
 
         Task.create(**request.only("text", "end_date", "category_id"))
-        return response.redirect(name="task.list")
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
 
     def show(self, view: View):
         return view.render("")
@@ -150,22 +155,28 @@ class TaskController(Controller):
         return view.render("")
 ```
 
-Метод `index()` похож на метод который мы писали для категорий. Здесь мы получаем список задач.
+В `index()` мы ищем все задачи по `id` категории, для этого используем метод `where()`. Обратите
+внимание, что вызван метод `get()`. Это нужно для того, чтобы получить `Collection`. Подробнее о
+`Collection` можно прочитать в [документации Masonite ORM](https://orm.masoniteproject.com/collections)
 
 В методе `create()` мы не просто рендерим страницу, но и передаем список всех категорий, чтобы можно
 было выбрать к какой категории привязать задачу.
 
-Наш метод `store()` также похож на тот который мы уже писали, но есть отличия. Указано 
+Наш метод `store()` похож на тот который мы уже писали для категорий, но есть отличия. Указано 
 несколько обязательных данных, такие как, `text`, `end_date`, `category_id`.
 
 Также обратите внимание на 30-ю строку. Здесь для получения данных мы используем метод `only()`.
-Он вернет только те данные которые мы указали.
+Он вернет только те данные, которые мы перечислили.
+
+Для редиректа пользователя на страницу со списком задач, в метод `redirect()` передаем имя маршрута и
+необходимые параметры.
+
 
 ### Шаблон списка задач
 В директории `templates` создайте директорию `task`. 
 
-Создайте файл `templates/task/list.html`.
-```html linenums="1" hl_lines="12 17" title="templates/task/list.html"
+Создайте файл `list.html` в `templates/task`. И добавьте в него код ниже.
+```html linenums="1" title="templates/task/list.html"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -174,30 +185,83 @@ class TaskController(Controller):
   <title>Категории</title>
 </head>
 <body>
-
 <section>
-  <h2>Список всех задач</h2>
-  <a href="{{ route('task.create') }}">Создать задачу</a>
 
-  <ul class="list">
+  <h2>Список задач</h2>
+  <a class="btn" href="{{ route('task.create') }}">Создать задачу</a>
+
+  @if tasks
     @for task in tasks
-    <li class="list-item">
-      <a href="{{ route('task.single', {'id': task.id}) }}">{{task.text}}</a>
-    </li>
+    <div class="list-item">
+      <div>
+          <span class="
+            @if task.done == 'on'
+              done
+            @else
+              work
+            @endif
+            "
+          >
+          </span>
+        <span>Задача: {{task.text}} | </span>
+        <span>выполнить до: {{task.end_date}}</span>
+      </div>
+      <a href="{{ route('task.single', {'id': task.id}) }}">Редактировать</a>
+    </div>
     @endfor
-  </ul>
-</section>
+  @endif
 
+</section>
 </body>
 </html>
 ```
-Данный шаблон похож на тот, который ми писали для списка категорий, но есть пару отличий.
+Разберем некоторые моменты более подробно.
+```html linenums="1" hl_lines="12 17-24 29" title="templates/task/list.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="/static/style.css" rel="stylesheet">
+  <title>Категории</title>
+</head>
+<body>
+<section>
 
+  <h2>Список задач</h2>
+  <a class="btn" href="{{ route('task.create') }}">Создать задачу</a>
+
+    @for task in tasks
+    <div class="list-item">
+      <div>
+          <span class="
+            @if task.done == 'on'
+              done
+            @else
+              work
+            @endif
+            "
+          >
+          </span>
+        <span>Задача: {{task.text}} | </span>
+        <span>выполнить до: {{task.end_date}}</span>
+      </div>
+      <a href="{{ route('task.single', {'id': task.id}) }}">Редактировать</a>
+    </div>
+    @endfor
+
+</section>
+</body>
+</html>
+```
 Обратите внимание на выделенные строки. На 12-й строке для формирования url используется метод `route()`.
 
-На 17-й строке также используем `route()`, но так как, нам нужно передать `id` задачи, после имени
+На 29-й строке также используем `route()`, но так как, нам нужно передать `id` задачи, после имени
 маршрута указываем словарь для нашего параметра `id`. Обратите внимание, что `task.id` не взять в двойные
 фигурные скобки.
+
+Рассмотрим с 17-й по 24-у строки. Здесь для того, чтобы установить нужный класс тегу `span`, проверяем 
+значение `task.done`. Так у нас отобразиться галочка или кружок, которые будут информировать о статусе
+задачи.
 
 ### Шаблон создания задачи
 Создайте файл `templates/task/create.html` и добавьте в него код ниже.
@@ -212,7 +276,9 @@ class TaskController(Controller):
 <body>
 <section>
 
-  <h2>Создать задачу</h2>
+  <div class="center">
+    <h2>Создать задачу</h2>
+  </div>
 
   <form action="{{ route('task.store') }}" method="POST">
     {{ csrf_field }}
@@ -224,15 +290,17 @@ class TaskController(Controller):
         <option value="{{category.id}}">{{category.name}}</option>
       @endfor
     </select>
-    <button type="submit">Создать</button>
+    <div>
+      <button class="btn" type="submit">Создать</button>
+    </div>
   </form>
 
 </section>
 </body>
 </html>
 ```
-
 Рассмотрим фрагмент кода с выбором категории.
+
 ```html linenums="1" hl_lines="11-13" title="templates/task/create.html"
 ...
 
@@ -248,22 +316,31 @@ class TaskController(Controller):
         <option value="{{category.id}}">{{category.name}}</option>
       @endfor
     </select>
-    <button type="submit">Создать</button>
+    <div>
+      <button class="btn" type="submit">Создать</button>
+    </div>
   </form>
 
 ...
 ```
 
-Здесь мы перебираем список категорий и формируем `select`. Значение `option` - `id` категории, 
+Здесь мы перебираем список категорий и формируем `select`. Значение `option` - это `id` категории, 
 а пользователю покажем имя категории. 
 
-После создания категории, нас должно перенаправить на список задач.
+После создания задачи, нас должно перенаправить на список задач.
+
+### Проверяем работу
+Запустите сервер разработки и перейдите по ссылке [http://127.0.0.1:8000](http://127.0.0.1:8000)
+и кликните по названию категории. Затем вы сможете создать задачу.
+
+После сохранения вас перенаправит на список задач той категории, которую вы выбрали при создании.
 
 ## Вывод, редактирование и удаление задачи
 Реализуем функционал, который позволит нам получить одну задачу, а так же отредактировать и удалить ее.
 
 ### Контроллер
-```py linenums="1" hl_lines="33-36 41-55 57-59"  title="app/controllers/TaskController.py"
+В контроллере `TaskController` обновим код в методах `show()`, `update()` и `destroy()`.
+```py linenums="1" hl_lines="35-38 43-61 63-65"  title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
 from masonite.response import Response
@@ -274,8 +351,8 @@ from app.models.Task import Task
 
 
 class TaskController(Controller):
-    def index(self, view: View):
-        tasks = Task.all()
+    def index(self, view: View, request: Request):
+        tasks = Task.where("category_id", request.param("category_id")).get()
         return view.render("task.list", {"tasks": tasks})
 
     def create(self, view: View):
@@ -294,7 +371,9 @@ class TaskController(Controller):
             return response.redirect(name="task.create")
 
         Task.create(**request.only("text", "end_date", "category_id"))
-        return response.redirect(name="task.list")
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
 
     def show(self, view: View, request: Request):
         task = Task.find_or_fail(request.param("id"))
@@ -312,13 +391,17 @@ class TaskController(Controller):
                 "text": "required",
                 "end_date": "required",
                 "category_id": "required"
-            }
+            },
         )
         if errors:
-            return response.redirect(name='task.update', params={"id": request.param("id")})
+            return response.redirect(name='task.single', params={"id": request.param("id")})
 
-        task.force_update(request.only("text", "end_date", "category_id"))
-        return response.redirect(name="task.list")
+        data = request.only("text", "end_date", "category_id")
+        data.update({"done": request.input("done", "off")})
+        task.update(data)
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
 
     def destroy(self, request: Request, response: Response):
         Task.find_or_fail(request.param("id")).delete()
@@ -340,7 +423,7 @@ class TaskController(Controller):
 Помимо того, что получаем задачу по `id`, еще нам потребуется получить все категории. Они нам нужны
 для того, чтобы мы могли изменить категорию задачи при редактировании. 
 
-```py linenums="1" hl_lines="17"  title="app/controllers/TaskController.py"
+```py linenums="1" hl_lines="17-19"  title="app/controllers/TaskController.py"
 ...
 class TaskController(Controller):
     ...
@@ -352,18 +435,29 @@ class TaskController(Controller):
                 "text": "required",
                 "end_date": "required",
                 "category_id": "required"
-            }
+            },
         )
         if errors:
-            return response.redirect(name='task.update', params={"id": request.param("id")})
+            return response.redirect(name='task.single', params={"id": request.param("id")})
 
-        task.update(request.only("text", "end_date", "category_id"))
-        return response.redirect(name="task.list")
+        data = request.only("text", "end_date", "category_id")
+        data.update({"done": request.input("done", "off")})
+        task.update(data)
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
     ...
 ```
 
-Метод update похож на тот который мы писали для редактирования категорий. Но есть одно отличие. 
-Здесь для обновления нескольких столбцов в таблице, мы используем метод `update()` в который 
+В методе `update()` на 17-й строке получаем словарь с перечисленными данными.
+
+Так-как `done` необязательно для заполнения и при его отсутствии нам нужно получить значение по умолчанию.
+Если пользователь не выберет данный `checkbox`, то он не будет передан вместе с данными формы, т.е. 
+будет отсутствовать. И по логики нашего приложения это значит, что `done` установлен в `off`.
+Для этого на 18-й строке в словарь добавляем ключ `done` со значением который выбрал пользователь или
+по умолчанию `"off"`.
+
+Для обновления нескольких столбцов в таблице, мы используем метод модели `update()` в который 
 передаем словарем пришедшие данные.
 
 !!! note success "Обновление записей"
@@ -405,7 +499,7 @@ post.delete()
 ```
 
 ### Шаблон
-Создайте файл `templates/task/single.html` и добавьте в него следующий код.
+Создайте файл `single.html` в `templates/task` и добавьте в него следующий код.
 ```html linenums="1" title="templates/task/single.html"
 <!DOCTYPE html>
 <html lang="en">
@@ -421,32 +515,53 @@ post.delete()
 
   <form action="{{ route('task.update', {'id': task.id}) }}" method="POST">
     {{ csrf_field }}
+    <input type="checkbox" name="done" value="on"
+           @if task.done == 'on'
+            checked
+           @endif
+    >
     <input type="text" name="text" value="{{task.text}}">
     <input type="datetime-local" name="end_date" value="{{task.end_date}}">
     <select name="category_id">
       <option disabled>Выберите категорию</option>
       @for category in categories
 
-        <option value="{{category.id}}"
-              @if task.category_id == category.id
+      <option value="{{category.id}}"
+              @if task.category_id== category.id
                 selected
               @endif
-        >
-          {{category.name}}
-        </option>
+      >
+        {{category.name}}
+      </option>
 
       @endfor
     </select>
-    <button type="submit">Сохранить</button>
+    <div>
+      <button class="btn" type="submit">Сохранить</button>
+      <a class="btn-del" href="{{ route('task.delete', {'id': task.id}) }}">Удалить</a>
+    </div>
   </form>
 
-  <a href="{{ route('task.delete', {'id': task.id}) }}">Удалить</a>
-  </section>
-
+</section>
 </body>
 </html>
 ```
-Рассмотрим более подробно выбор категории.
+Разберем фрагмент с `checkbox`.
+```html linenums="1" hl_lines="4-8" title="templates/task/single.html"
+...
+  <form action="{{ route('task.update', {'id': task.id}) }}" method="POST">
+    {{ csrf_field }}
+    <input type="checkbox" name="done" value="on"
+           @if task.done == 'on'
+            checked
+           @endif
+    >
+    <input type="text" name="text" value="{{task.text}}">
+...
+```
+Если значение `done` буден `on`, тогда `checkbox` будет отображаться как выбранный.
+
+Теперь рассмотрим более подробно выбор категории.
 ```html linenums="1" hl_lines="7-9" title="templates/task/single.html"
 ...
     <select name="category_id">
@@ -471,4 +586,14 @@ post.delete()
 
 !!! note success "Оператор if"
     Обратите внимание, что оператор `if` находиться внутри html тега. Для того чтобы наш код 
-    сработал, мы его написали с новой строки. Это нюансы шаблонизатора.
+    сработал, мы его написали с новой строки. Это нюанс шаблонизатора.
+
+### Проверим работу
+Теперь можно запустить сервер разработки и проверить работу. Перейдите на страницу списка задач и
+попробуйте отредактировать или удалить задачу.
+
+## Итог
+
+В данном руководстве вы познакомились с базовыми функциями фреймворка Masonite.
+
+Полный код проекта можно найти на [GitHub]()

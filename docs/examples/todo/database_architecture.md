@@ -121,7 +121,7 @@ class CreateCategoriesTable(Migration):
     [Masonite ORM](https://orm.masoniteproject.com/schema-and-migrations#available-methods)
 
 ### Миграция для задач
-Теперь создадим файл миграций для таблицы `Task`:
+Теперь создадим файл миграций для таблицы задач:
 ```
 python craft migration create_tasks_table --create tasks
 ```
@@ -175,7 +175,7 @@ python craft migrate
 
 ## Создание моделей
 Модели в Masonite немного отличаются от других фреймворков Python. Masonite использует 
-Active Record ORM. Модели и миграции в разделены. Наши модели будут повторять вид наших таблиц 
+Active Record ORM. Модели и миграции разделены. Наши модели будут повторять вид наших таблиц 
 независимо от того, как выглядит таблица.
 
 Для создания модели категории (Category) выполним следующую команду:
@@ -197,6 +197,7 @@ from masoniteorm.models import Model
 
 class Category(Model):
     """Category Model"""
+    
     pass
 ```
 
@@ -259,7 +260,7 @@ class Task(Model):
 ### Связь между моделями
 Помните, что мы создали внешний ключ в нашей миграции, для связи задач и категории. Мы можем 
 описать эту связь в нашей модели следующим образом:
-```py linenums="1" hl_lines="11-14" title="app/models/Task.py"
+```py linenums="1" hl_lines="4 11-14" title="app/models/Task.py"
 """ Task Model """
 
 from masoniteorm.models import Model
@@ -283,5 +284,8 @@ class Task(Model):
 
 - **@belongs_to('category_id', 'id')** - Первым аргументом **всегда** является имя столбца в таблице текущей модели, а вторым аргументом — 
 связанное поле в другой таблице.
+
+Более подробно о связи таблиц (relationships) можно прочитать в 
+документации [Masonite ORM](https://orm.masoniteproject.com/models#relationships)
 
 [Часть 4](/examples/todo/category/)
