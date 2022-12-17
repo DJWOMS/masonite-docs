@@ -63,4 +63,6 @@ nav:
     - Конфигурация: basics/configuration.md
     - Обработка ошибок: basics/error_handling.md
   - Архитектура:
+    - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
+
