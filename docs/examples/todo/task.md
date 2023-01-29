@@ -340,7 +340,7 @@ class TaskController(Controller):
 
 ### Контроллер
 В контроллере `TaskController` обновим код в методах `show()`, `update()` и `destroy()`.
-```py linenums="1" hl_lines="35-38 43-61 63-65"  title="app/controllers/TaskController.py"
+```py linenums="1" hl_lines="35-38 43-61 63-67"  title="app/controllers/TaskController.py"
 from masonite.controllers import Controller
 from masonite.request import Request
 from masonite.response import Response
@@ -405,7 +405,9 @@ class TaskController(Controller):
 
     def destroy(self, request: Request, response: Response):
         Task.find_or_fail(request.param("id")).delete()
-        return response.redirect(name="task.list")
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
 ```
 Рассмотрим каждый метод по отдельности. Начнем с метода `show()`.
 
@@ -487,7 +489,9 @@ class TaskController(Controller):
     ...
     def destroy(self, request: Request, response: Response):
         Task.find_or_fail(request.param("id")).delete()
-        return response.redirect(name="task.list")
+        return response.redirect(
+            name="task.list", params={"category_id": request.input("category_id")}
+        )
     ...
 ```
 
@@ -538,7 +542,7 @@ post.delete()
     </select>
     <div>
       <button class="btn" type="submit">Сохранить</button>
-      <a class="btn-del" href="{{ route('task.delete', {'id': task.id}) }}">Удалить</a>
+      <a class="btn-del" href="{{ route('task.delete', {'id': task.id})}}?category_id={{task.category_id}} ">Удалить</a>
     </div>
   </form>
 

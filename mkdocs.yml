@@ -62,6 +62,8 @@ nav:
     - Environments: basics/environments.md
     - Конфигурация: basics/configuration.md
     - Обработка ошибок: basics/error_handling.md
+  - Особенности:
+    - Разработка API: feature/api.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
