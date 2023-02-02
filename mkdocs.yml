@@ -65,6 +65,7 @@ nav:
   - Особенности:
     - Разработка API: feature/api.md
     - Аутентификация: feature/authentication.md
+    - Авторизация: feature/authorization.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
