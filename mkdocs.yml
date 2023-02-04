@@ -66,6 +66,8 @@ nav:
     - Разработка API: feature/api.md
     - Аутентификация: feature/authentication.md
     - Авторизация: feature/authorization.md
+    - Трансляция событий: feature/broadcasting.md
+    - Сборка assets: feature/compiling-assets.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
