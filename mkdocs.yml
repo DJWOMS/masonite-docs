@@ -70,6 +70,7 @@ nav:
     - Трансляция событий: feature/broadcasting.md
     - Кэширование: feature/caching.md
     - Сборка assets: feature/compiling-assets.md
+    - Команды: feature/commands.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
