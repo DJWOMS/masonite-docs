@@ -40,7 +40,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/MasoniteFramework/masonite
+      link: https://github.com/DJWOMS/masonite-docs-ru
     - icon: fontawesome/brands/telegram
       link: https://t.me/masonite_channel
 nav:
@@ -71,6 +71,7 @@ nav:
     - Кэширование: feature/caching.md
     - Сборка assets: feature/compiling-assets.md
     - Команды: feature/commands.md
+    - CSRF защита: feature/csrf.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
