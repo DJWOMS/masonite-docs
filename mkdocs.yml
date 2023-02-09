@@ -72,6 +72,7 @@ nav:
     - Сборка assets: feature/compiling-assets.md
     - Команды: feature/commands.md
     - CSRF защита: feature/csrf.md
+    - События: feature/events.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
