@@ -73,6 +73,7 @@ nav:
     - Команды: feature/commands.md
     - CSRF защита: feature/csrf.md
     - События: feature/events.md
+    - Facades: feature/facades.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
