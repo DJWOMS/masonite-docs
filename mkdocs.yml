@@ -75,6 +75,7 @@ nav:
     - События: feature/events.md
     - Facades: feature/facades.md
     - Очереди и задачи: feature/queues.md
+    - Планировщик задач: feature/scheduling.md
   - Архитектура:
     - Service Provider: architecture/service-provider.md
     - Service Container: architecture/service-container.md
